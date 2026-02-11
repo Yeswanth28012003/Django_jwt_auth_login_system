@@ -9,6 +9,9 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
+import os
+
+
 
 from pathlib import Path
 import os
@@ -209,11 +212,15 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+
+
 SOCIALACCOUNT_PROVIDERS = {
     'google':{
         'APP':{
-            'client_id':'404596195032-7qe88v9d7soicdvmkt640i497e838gah.apps.googleusercontent.com',
-            'secret':'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',
+            'client_id':GOOGLE_CLIENT_ID,
+            'secret':GOOGLE_CLIENT_SECRET,
             'key':''
         },
        
