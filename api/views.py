@@ -2,7 +2,16 @@ from  rest_framework import generics,status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
-from .models import SailorUser
+from .models import (
+    SailorUser,
+    Course,
+    Category,
+    Module,
+    video_contents,
+    docs_contents,
+    
+    
+    )
 from .serializers import (SailorUserSerializer,
 MyTokenObtainPairSerializer,
 CourseSerializer,
@@ -13,6 +22,7 @@ docs_contentsSerializer,
 
 
                 )
+
 from django.http import HttpResponse, JsonResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
@@ -34,6 +44,7 @@ from django.contrib.auth import authenticate
 from .otpgenerstor import generate_otp
 from django.utils import timezone
 from datetime import timedelta
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 class GoogleLoginView(APIView):
@@ -72,10 +83,10 @@ class GoogleLoginView(APIView):
 class sailoruserlistview(generics.ListCreateAPIView):
     queryset = SailorUser.objects.all()
     serializer_class = SailorUserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     
 # Sign up User View
-@csrf_exempt
+# @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup_user(request):
@@ -120,8 +131,6 @@ def signup_user(request):
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
-
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def resend_otp(request):
@@ -156,12 +165,8 @@ def resend_otp(request):
 
     return Response({"msg": "New OTP sent successfully"}, status=200)
 
-
-
-
-
 #Normal Login View
-@csrf_exempt
+# @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_user(request):
@@ -211,3 +216,118 @@ def verify_email(request):
     sailor_user.save()
     return Response({"message":"Email verfied Successfully"},status=200)
 
+##############################################################################
+##################### CATEGORY API VIEWS ##################################### ###############################################################################
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_category(request):
+    serializer = CategorySerializer(data = request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data,status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_category_details(request, category_id):
+    try:
+        category_obj =  serializer = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return Response({"msg":"Category Not Found"},status=404)
+    serializer = CategorySerializer(category_obj)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_category(request, category_id):
+    try:
+        category_obj = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return Response({"msg":"Category Not Found"},status=404)
+    serializer = CategorySerializer(category_obj, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_category(request, category_id):
+    try:
+        category_obj = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return Response({"msg":"Category Not Found"},status=404)
+    category_obj.delete()
+    return Response({"msg":"Category Deleted Successfully"},status=204)
+
+
+class CategoryListView(generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+##############################################################################
+########### Course API Views ################################################## ###############################################################################
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def Create_course(request):
+    serializer = CourseSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class courlistseview(generics.ListCreateAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated]
+
+# class courseviewdetails(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Course.objects.all()
+#     serializer_class = CourseSerializer
+#     permission_classes = [IsAuthenticated]
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_course_details(request, course_id):
+    try:
+        course = Course.objects.get(id = course_id)
+    except Course.DoesNotExist: 
+        return Response({"msg":"Course NOt found"},status=404)
+    serializer  = CourseSerializer(course)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_course(request,course_id):
+    try:
+        course = Course.objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return Response({"msg":"Course Not Found"},status=404)
+    serializer = CourseSerializer(course, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_course(request, course_id):
+    try:
+        course = Course.objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return Response({"msg":"Course Not Found"},status=404)
+    course.delete()
+    return Response({"msg":"Course Deleted Successfully"},status=204)
+
+
+#######################################
+########## MODULE API VIEWS ###########
+#######################################
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_module(request):
+    serializer = ModuleSerializer(data=request.data)
+    

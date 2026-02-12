@@ -10,7 +10,7 @@ class SailorUser(models.Model):
     mobile_number = models.PositiveBigIntegerField(max_length=10, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     is_verified = models.BooleanField(default=False)
-    otp = models.CharField(blank=True,null=True)
+    otp = models.CharField(max_length=10,blank=True,null=True)
     otp_created_at = models.DateTimeField(default=timezone.now)
     is_google_auth =  models.BooleanField(default=False)
     
