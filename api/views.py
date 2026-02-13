@@ -219,7 +219,7 @@ def verify_email(request):
 ##############################################################################
 ##################### CATEGORY API VIEWS ##################################### ###############################################################################
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def create_category(request):
     serializer = CategorySerializer(data = request.data)
     if serializer.is_valid():
@@ -228,7 +228,7 @@ def create_category(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def get_category_details(request, category_id):
     try:
         category_obj =  serializer = Category.objects.get(id=category_id)
@@ -238,7 +238,7 @@ def get_category_details(request, category_id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def update_category(request, category_id):
     try:
         category_obj = Category.objects.get(id=category_id)
@@ -251,7 +251,7 @@ def update_category(request, category_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def delete_category(request, category_id):
     try:
         category_obj = Category.objects.get(id=category_id)
@@ -264,7 +264,7 @@ def delete_category(request, category_id):
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 ##############################################################################
 ########### Course API Views ################################################## ###############################################################################
@@ -280,7 +280,7 @@ def Create_course(request):
 class courlistseview(generics.ListCreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 # class courseviewdetails(generics.RetrieveUpdateDestroyAPIView):
 #     queryset = Course.objects.all()
@@ -288,7 +288,7 @@ class courlistseview(generics.ListCreateAPIView):
 #     permission_classes = [IsAuthenticated]
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def get_course_details(request, course_id):
     try:
         course = Course.objects.get(id = course_id)
@@ -299,7 +299,7 @@ def get_course_details(request, course_id):
 
 
 @api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def update_course(request,course_id):
     try:
         course = Course.objects.get(id=course_id)
@@ -312,7 +312,7 @@ def update_course(request,course_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def delete_course(request, course_id):
     try:
         course = Course.objects.get(id=course_id)
@@ -322,12 +322,210 @@ def delete_course(request, course_id):
     return Response({"msg":"Course Deleted Successfully"},status=204)
 
 
-#######################################
-########## MODULE API VIEWS ###########
-#######################################
+##############################################################################################
+########## MODULE API VIEWS ###############################################################
+#############################################################################################
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def create_module(request):
     serializer = ModuleSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_module_details(request, moudule_id):
+    try:
+        module_obj =  Module.objects.get(id=moudule_id)
+    except Module.DoesNotExist:
+        return Response({"msg":"Module Not Found"},status=404)
+    serializer = ModuleSerializer(module_obj)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_module(request, module_id):
+    try:
+        module_obj = Module.objects.get(id=module_id)
+    except Module.DoesNotExist:
+        return Response({"msg":"Module Not Found"},status=404)
+    serializer = ModuleSerializer(module_obj, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_module(request, module_id):
+    try:
+        module_obj = Module.objects.get(id=module_id)
+    except Module.DoesNotExist:
+        return Response({"msg":"Module Not Found"},status=404)
+    module_obj.delete()
+    return Response({"msg":"Module Deleted Successfully"},status=204)
+
+class ModuleList(generics.ListCreateAPIView):
+    queryset = Module.objects.all()
+    serializer_class = ModuleSerializer
+    permission_classes = [AllowAny]
+
+
+###################################################################################################################   VIDEO CONTENTS API VIEWS  ###################################################################################################################
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def Create_video_content(request):
+    serializer = video_contentsSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_video_content_details(request , video_id):
+    try:
+        video_obj = video_contents.objects.get(id=video_id)
+    except video_contents.DoesNotExist:
+        return Response({"msg":"Video Content Not Found"},status=404)
+    serializer = video_contentsSerializer(video_obj)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_video_content(request, video_id):
+    try:
+        video_obj = video_contents.objects.get(id=video_id)
+    except video_contents.DoesNotExist:
+        return Response({"msg":"Video Content Not Found"},status=404)
+    serializer = video_contentsSerializer(video_obj, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_video_content(request, video_id):
+    try:
+        video_obj = video_contents.objects.get(id=video_id)
+    except video_contents.DoesNotExist:
+        return Response({"msg":"Video Content Not Found"},status=404)
+    video_obj.delete()
+    return Response({"msg":"Video Content Deleted Successfully"},status=204)
+
+
+class video_content_list(generics.ListCreateAPIView):
+    queryset = video_contents.objects.all()
+    serializer_class = video_contentsSerializer
+    permission_classes = [AllowAny]
     
+    
+##############################################################################################
+########## DOCS CONTENT API VIEWS  #######################################################################################################
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def Create_docs_content(request):
+    serializer = docs_contentsSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_details_docs_content(request_id):
+    try:
+        docs_obj = docs_contents.objects.get(id=request_id)
+    except docs_contents.DoesNotExist:
+        return Response({"msg":"Docs Content Not Found"},status=404)
+    serializer = docs_contentsSerializer(docs_obj)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_docs_content(request, docs_id):
+    try:
+        docs_obj = docs_contents.objects.get(id=docs_id)
+    except docs_contents.DoesNotExist:
+        return Response({"msg":"Docs Content Not Found"},status=404)
+    serializer = docs_contentsSerializer(docs_obj, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_docs_content(request, docs_id):
+    try:
+        docs_obj = docs_contents.objects.get(id=docs_id)
+    except docs_contents.DoesNotExist:
+        return Response({"msg":"Docs Content Not Found"},status=404)
+    docs_obj.delete()
+    return Response({"msg":"Docs Content Deleted Successfully"},status=204)
+
+
+class docs_content_list(generics.ListCreateAPIView):
+    queryset = docs_contents.objects.all()
+    serializer_class = docs_contentsSerializer
+    permission_classes = [AllowAny]
+    
+
+###################################################################################################
+################################ OVER ALL COURSE  DETAILVIEW vIEWS  #######################################################################################################
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_overall_course_details(request):
+    courses = Course.objects.all()
+    overall_data = []
+
+    for course_obj in courses:
+        course_serializer = CourseSerializer(
+            course_obj,
+            context={'request': request}
+        )
+
+        modules = course_obj.modules.all()
+        module_data = []
+
+        for module in modules:
+            module_serializer = ModuleSerializer(
+                module,
+                context={'request': request}
+            )
+
+            video_contents_qs = module.video_contents.all()
+            video_data = video_contentsSerializer(
+                video_contents_qs,
+                many=True,
+                context={'request': request}  
+            ).data
+
+            docs_contents_qs = module.docs_contents.all()
+            docs_data = docs_contentsSerializer(
+                docs_contents_qs,
+                many=True,
+                context={'request': request}   
+            ).data
+
+            module_data.append({
+                "module": module_serializer.data,
+                "video_contents": video_data,
+                "docs_contents": docs_data
+            })
+
+        overall_data.append({
+            "course": course_serializer.data,
+            "modules": module_data
+        })
+
+    return Response(overall_data, status=status.HTTP_200_OK)
+

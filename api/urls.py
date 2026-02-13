@@ -56,12 +56,40 @@ path('courses/',views.courlistseview.as_view(),name='course list create'),
    ############  ###########
    ##### Module API URLS####
    ############ ###########
+   path('modules/',views.ModuleList.as_view(),name='module list create'),
+    path('create_module/',views.create_module,name='create module'),
+    path('module/<int:module_id>/',views.get_module_details,name='module detail'),
+    path('update_module/<int:module_id>/',views.update_module,name='update module'),
+    path('delete_module/<int:module_id>/',views.delete_module,name='delete module'),
 
-
+    
+    
+    ############################
+    ####### video contents API URLS ######
+    ############################
+    path('video_contents/',views.video_content_list.as_view(),name='video contents list create'),
+    path('create_video_content/',views.Create_video_content,name='create video content'),
+    path('video_content/<int:video_content_id>/',views.get_video_content_details,name='video content detail'),
+    path('update_video_content/<int:video_content_id>/',views.update_video_content,name='update video content'),
+    path('delete_video_content/<int:video_content_id>/',views.delete_video_content,name='delete video content'),
    
 
 
-
+    ############################
+    ####### docs contents API URLS ######
+    ############################
+    path('docs_contents/',views.docs_content_list.as_view(),name='docs contents list create'),
+    path('create_docs_content/',views.Create_docs_content,name='create docs content'),
+    path('docs_content/<int:docs_content_id>/',views.get_details_docs_content,name='docs content detail'),
+    path('update_docs_content/<int:docs_content_id>/',views.update_docs_content,name
+='update docs content'),
+    path('delete_docs_content/<int:docs_content_id>/',views.delete_docs_content,name='delete docs content'),    
+    
+    
+############################################
+############# API for Overall course Details
+############################################
+path('over_all_course_details/',views.get_overall_course_details,name='course details'),
 
 ]
 
