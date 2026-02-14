@@ -9,6 +9,7 @@ from .models import (
     Module,
     video_contents,
     docs_contents,
+    Video_Activity
     
     
     )
@@ -19,6 +20,7 @@ CategorySerializer,
 ModuleSerializer,
 video_contentsSerializer,
 docs_contentsSerializer,
+video_activitySerializer
 
 
                 )
@@ -506,12 +508,23 @@ def get_overall_course_details(request):
             )
 
             video_contents_qs = module.video_contents.all()
-            video_data = video_contentsSerializer(
-                video_contents_qs,
-                many=True,
-                context={'request': request}  
-            ).data
-
+            video_data = []
+            for video in video_contents_qs:
+                video_serializer = video_contentsSerializer(
+                    video,
+                    context={'request': request}
+                ).data
+                
+                video_activity_qs = video.activities.all()
+                video_activity_data = video_activitySerializer(
+                    video_activity_qs,
+                    many=True,
+                    context={'request': request}
+                ).data
+                video_data.append({
+                    "video": video_serializer,
+                    "activities": video_activity_data
+                })
             docs_contents_qs = module.docs_contents.all()
             docs_data = docs_contentsSerializer(
                 docs_contents_qs,
@@ -532,3 +545,54 @@ def get_overall_course_details(request):
 
     return Response(overall_data, status=status.HTTP_200_OK)
 
+###################################################################################################################
+############################### ACTIVITY APIS  ###################################################################################################################
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_video_activity(request):
+    serializer = video_activitySerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_video_activity_details(request, activity_id):
+    try:
+        activity_obj = Video_Activity.objects.get(id = activity_id)
+    except Video_Activity.DoesNotExist:
+        return Response({"msg":"Activity Not Found"},status=404)
+    
+    serializer = video_activitySerializer(activity_obj)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_video_activity(request, activity_id):
+    try:
+        activity_obj = Video_Activity.objects.get(id=activity_id)
+    except Video_Activity.DoesNotExist:
+        return Response({"msg":"Activity Not Found"},status=404)
+    serializer = video_activitySerializer(activity_obj, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_video_activity(request, activity_id):
+    try:
+        activity_obj = Video_Activity.objects.get(id = activity_id)
+    except Video_Activity.DoesNotExist:
+        return Response({"msg":"Activity Not Found"},status=404)
+    activity_obj.delete()
+    return Response({"msg":"Activity Deleted Successfully"},status=204)
+
+class VideoActivityList(generics.ListCreateAPIView):
+    queryset = Video_Activity.objects.all()
+    serializer_class = video_activitySerializer
+    permission_classes = [AllowAny]
+    

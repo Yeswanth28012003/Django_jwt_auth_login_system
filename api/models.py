@@ -7,7 +7,7 @@ class SailorUser(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     age = models.IntegerField(blank=True, null=True)
     rank = models.CharField(max_length=100, blank=True, null=True)
-    mobile_number = models.PositiveBigIntegerField(max_length=10, blank=True, null=True)
+    mobile_number = models.PositiveBigIntegerField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     otp = models.CharField(max_length=10,blank=True,null=True)
@@ -53,3 +53,11 @@ class docs_contents(models.Model):
     def __str__(self):
         return self.title
     
+class Video_Activity(models.Model):
+    video = models.ForeignKey(
+        'video_contents',
+        on_delete=models.CASCADE, 
+        related_name='activities'
+    )
+    activity_time = models.TimeField() 
+    type = models.CharField(max_length=50)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SailorUser,Course,Category,Module,video_contents,docs_contents
+from .models import SailorUser,Course,Category,Module,video_contents,docs_contents,Video_Activity
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -56,7 +56,7 @@ class CourseSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Course
-        fields = ['name', 'category', 'description']
+        fields = ['id','name', 'category', 'description']
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,7 +71,7 @@ class ModuleSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Module
-        fields = ['name', 'course']
+        fields = ['id','name', 'course']
         
         
 class video_contentsSerializer(serializers.ModelSerializer):
@@ -81,7 +81,7 @@ class video_contentsSerializer(serializers.ModelSerializer):
         )
         class Meta:
             model = video_contents
-            fields = ['module', 'title', 'video_file']
+            fields = ['id','module', 'title', 'video_file']
         
 class docs_contentsSerializer(serializers.ModelSerializer):
     module = serializers.SlugRelatedField(
@@ -90,5 +90,13 @@ class docs_contentsSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = docs_contents
-        fields = ['module', 'title', 'doc_file']
+        fields = ['id','module', 'title', 'doc_file']
         
+class video_activitySerializer(serializers.ModelSerializer):
+    video = serializers.SlugRelatedField(
+        slug_field='title',
+        queryset=video_contents.objects.all()
+    )
+    class Meta:
+        model = Video_Activity
+        fields = ['id','video', 'activity_time', 'type']

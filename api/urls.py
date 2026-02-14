@@ -91,5 +91,18 @@ path('courses/',views.courlistseview.as_view(),name='course list create'),
 ############################################
 path('over_all_course_details/',views.get_overall_course_details,name='course details'),
 
+
+##############################################
+########## API for user activity  ############
+##############################################
+path('create_activity/',views.create_video_activity,name='create video activity'),
+path('get_activity/<int:activity_id>/',views.get_video_activity_details,name='get video activity'),
+path('update_activity/<int:activity_id>/',views.update_video_activity,name='update video activity'),
+path('delete_activity/<int:activity_id>/',views.delete_video_activity,name='delete video activity'),
+path('activity_list/',views.VideoActivityList.as_view(),name='video activity list'),
+
+
+
+
 ]
 
