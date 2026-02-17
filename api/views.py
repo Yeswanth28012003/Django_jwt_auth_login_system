@@ -9,9 +9,8 @@ from .models import (
     Module,
     video_contents,
     docs_contents,
-    Video_Activity
-    
-    
+    Video_Activity,
+    BaseModel
     )
 from .serializers import (SailorUserSerializer,
 MyTokenObtainPairSerializer,
@@ -35,13 +34,8 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
 from django.core.mail import EmailMessage,send_mail
 from django.conf import settings
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
 from django.contrib.auth import authenticate
 from .otpgenerstor import generate_otp
 from django.utils import timezone
@@ -69,7 +63,7 @@ class GoogleLoginView(APIView):
         )
 
    
-        SailorUser.objects.get_or_create(email=user)
+        SailorUser.active_objects.get_or_create(email=user)
         sailor_user = SailorUser.objects.get(email=user)
         print(sailor_user)
         sailor_user.is_google_auth = True
@@ -82,8 +76,10 @@ class GoogleLoginView(APIView):
             "refresh": str(refresh),
         })
 
+
+
 class sailoruserlistview(generics.ListCreateAPIView):
-    queryset = SailorUser.objects.all()
+    queryset = SailorUser.active_objects.all()
     serializer_class = SailorUserSerializer
     permission_classes = [IsAuthenticated]
     
@@ -107,7 +103,7 @@ def signup_user(request):
             password=password
         )
         user.save()
-        sailor_user = SailorUser.objects.create(email=user)
+        sailor_user = SailorUser.active_objects.create(email=user)
         sailor_user.otp = generate_otp()
         sailor_user.otp_created_at = timezone.now()
         sailor_user.save()
@@ -137,35 +133,38 @@ class MyTokenObtainPairView(TokenObtainPairView):
 @permission_classes([AllowAny])
 def resend_otp(request):
     email = request.data.get("email")
-
     try:
-        user = User.objects.get(email=email)
-        sailor_user = SailorUser.objects.get(email=user)
-    except User.DoesNotExist:
-        return Response({"msg": "User not found"}, status=404)
-    except SailorUser.DoesNotExist:
-        return Response({"msg":"Sailor use not found"},status=404)
+        try:
+            user = User.objects.get(email=email)
+            sailor_user = SailorUser.active_objects.get(email=user)
+        except User.DoesNotExist:
+            return Response({"msg": "User not found"}, status=404)
+        except SailorUser.DoesNotExist:
+            return Response({"msg":"Sailor use not found"},status=404)
 
-    if sailor_user.is_verified:
-        return Response({"msg": "User already verified"}, status=400)
+        if sailor_user.is_verified:
+            return Response({"msg": "User already verified"}, status=400)
 
 
-    if sailor_user.otp_created_at and timezone.now() < sailor_user.otp_created_at + timedelta(minutes=1):
-        return Response({"msg": "Please wait before requesting new OTP"}, status=400)
-    
-    sailor_user.otp = generate_otp()
-    sailor_user.otp_created_at = timezone.now()
-    sailor_user.save()
+        if sailor_user.otp_created_at and timezone.now() < sailor_user.otp_created_at + timedelta(minutes=1):
+            return Response({"msg": "Please wait before requesting new OTP"}, status=400)
+        
+        sailor_user.otp = generate_otp()
+        sailor_user.otp_created_at = timezone.now()
+        sailor_user.save()
 
-    send_mail(
-        subject="Resend OTP",
-        message=f"Your new OTP is {sailor_user.otp}",
-        from_email=settings.EMAIL_HOST_USER,
-        recipient_list=[email],
-        fail_silently=False
-    )
+        send_mail(
+            subject="Resend OTP",
+            message=f"Your new OTP is {sailor_user.otp}",
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[email],
+            fail_silently=False
+        )
 
-    return Response({"msg": "New OTP sent successfully"}, status=200)
+        return Response({"msg": "New OTP sent successfully"}, status=200)
+    except Exception as e:
+        print(e)
+        return Response({"msg": "An error occurred while resending OTP"}, status=500)
 
 #Normal Login View
 # @csrf_exempt
@@ -178,7 +177,7 @@ def login_user(request):
     if user is not None:
         refresh = RefreshToken.for_user(user)
         try:
-            sailor_obj = SailorUser.objects.get(email=user)
+            sailor_obj = SailorUser.active_objects.get(email=user)
             if sailor_obj.is_verified:
                 return Response({
                 'access': str(refresh.access_token),
@@ -204,7 +203,7 @@ def verify_email(request):
     print(email)
     try:
         user = User.objects.get(email=email)
-        sailor_user = SailorUser.objects.get(email=user)
+        sailor_user = SailorUser.active_objects.get(email=user)
     except User.DoesNotExist  :
         return Response({"msg":"user not found"},status=404)
     except SailorUser.DoesNotExist:
@@ -217,6 +216,85 @@ def verify_email(request):
     sailor_user.otp = None
     sailor_user.save()
     return Response({"message":"Email verfied Successfully"},status=200)
+
+######################################################
+###################### Restore Course Api View #######
+######################################################
+
+@api_view(['POST'])
+def restore_course(request, course_id):
+    course = Course.objects.get(id=course_id)
+    course.restore()
+    return Response({"message": "Course restored"})
+
+
+@api_view(['GET'])
+def get_deleted_courses(request):
+    deleted_courses = Course.objects.filter(is_deleted=True)
+    serializer = CourseSerializer(deleted_courses, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+def restore_category(request, category_id):
+    category = Category.objects.get(id=category_id)
+    category.restore()
+    return Response({"message": "Category restored"})
+
+@api_view(['GET'])
+def get_deleted_categories(request):
+    deleted_categories = Category.objects.filter(is_deleted=True)
+    serializer = CategorySerializer(deleted_categories, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def restore_module(request, module_id):
+    module = Module.objects.get(id=module_id)
+    module.restore()
+    return Response({"message": "Module restored"})
+
+@api_view(['GET'])
+def get_deleted_modules(request):
+    delete_modules = Module.objects.filter(is_deleted = True)
+    serializer = ModuleSerializer(delete_modules, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def restore_video_content(request, video_id):
+    video = video_contents.objects.get(id=video_id)
+    video.restore()
+    return Response({"message": "Video Content restored"})
+
+@api_view(['GET'])
+def get_deleted_video_contents(request):
+    deleted_videos = video_contents.objects.filter(is_deleted=True)
+    serializer = video_contentsSerializer(deleted_videos, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+def restore_docs_content(request, docs_id):
+    docs = docs_contents.objects.get(id=docs_id)
+    docs.restore()
+    return Response({"message": "Docs Content restored"})
+
+@api_view(['GET'])
+def get_deleted_docs_contents(request):
+    deleted_docs = docs_contents.objects.filter(is_deleted=True)
+    serializer = docs_contentsSerializer(deleted_docs, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def restore_video_activity(request, activity_id):
+    activity = Video_Activity.objects.get(id=activity_id)
+    activity.restore()
+    return Response({"message": "Video Activity restored"})
+
+@api_view(['GET'])
+def get_deleted_video_activities(request):
+    deleted_activities = Video_Activity.objects.filter(is_deleted=True)
+    serializer = video_activitySerializer(deleted_activities, many=True)
+    return Response(serializer.data)
 
 ##############################################################################################################################################################
 ##################### CATEGORY API VIEWS ##################################### ###############################################################################
@@ -234,7 +312,7 @@ def create_category(request):
 @permission_classes([AllowAny])
 def get_category_details(request, category_id):
     try:
-        category_obj =  serializer = Category.objects.get(id=category_id)
+        category_obj =  serializer = Category.active_objects.get(id=category_id)
     except Category.DoesNotExist:
         return Response({"msg":"Category Not Found"},status=404)
     serializer = CategorySerializer(category_obj)
@@ -244,7 +322,7 @@ def get_category_details(request, category_id):
 @permission_classes([AllowAny])
 def update_category(request, category_id):
     try:
-        category_obj = Category.objects.get(id=category_id)
+        category_obj = Category.active_objects.get(id=category_id)
     except Category.DoesNotExist:
         return Response({"msg":"Category Not Found"},status=404)
     serializer = CategorySerializer(category_obj, data=request.data)
@@ -257,15 +335,15 @@ def update_category(request, category_id):
 @permission_classes([AllowAny])
 def delete_category(request, category_id):
     try:
-        category_obj = Category.objects.get(id=category_id)
+        category_obj = Category.active_objects.get(id=category_id)
     except Category.DoesNotExist:
         return Response({"msg":"Category Not Found"},status=404)
-    category_obj.delete()
+    category_obj.soft_delete()
     return Response({"msg":"Category Deleted Successfully"},status=204)
 
 
 class CategoryListView(generics.ListAPIView):
-    queryset = Category.objects.all()
+    queryset = Category.active_objects.all()
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
 
@@ -282,7 +360,7 @@ def Create_course(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class courlistseview(generics.ListCreateAPIView):
-    queryset = Course.objects.all()
+    queryset = Course.active_objects.all()
     serializer_class = CourseSerializer
     permission_classes = [AllowAny]
 
@@ -295,7 +373,7 @@ class courlistseview(generics.ListCreateAPIView):
 @permission_classes([AllowAny])
 def get_course_details(request, course_id):
     try:
-        course = Course.objects.get(id = course_id)
+        course = Course.active_objects.get(id = course_id)
     except Course.DoesNotExist: 
         return Response({"msg":"Course NOt found"},status=404)
     serializer  = CourseSerializer(course)
@@ -306,7 +384,7 @@ def get_course_details(request, course_id):
 @permission_classes([AllowAny])
 def update_course(request,course_id):
     try:
-        course = Course.objects.get(id=course_id)
+        course = Course.active_objects.get(id=course_id)
     except Course.DoesNotExist:
         return Response({"msg":"Course Not Found"},status=404)
     serializer = CourseSerializer(course, data=request.data)
@@ -319,10 +397,10 @@ def update_course(request,course_id):
 @permission_classes([AllowAny])
 def delete_course(request, course_id):
     try:
-        course = Course.objects.get(id=course_id)
+        course = Course.active_objects.get(id=course_id)
     except Course.DoesNotExist:
         return Response({"msg":"Course Not Found"},status=404)
-    course.delete()
+    course.soft_delete()
     return Response({"msg":"Course Deleted Successfully"},status=204)
 
 
@@ -343,7 +421,7 @@ def create_module(request):
 @permission_classes([AllowAny])
 def get_module_details(request, module_id):
     try:
-        module_obj =  Module.objects.get(id=module_id)
+        module_obj =  Module.active_objects.get(id=module_id)
     except Module.DoesNotExist:
         return Response({"msg":"Module Not Found"},status=404)
     serializer = ModuleSerializer(module_obj)
@@ -353,7 +431,7 @@ def get_module_details(request, module_id):
 @permission_classes([AllowAny])
 def update_module(request, module_id):
     try:
-        module_obj = Module.objects.get(id=module_id)
+        module_obj = Module.active_objects.get(id=module_id)
     except Module.DoesNotExist:
         return Response({"msg":"Module Not Found"},status=404)
     serializer = ModuleSerializer(module_obj, data=request.data)
@@ -366,14 +444,14 @@ def update_module(request, module_id):
 @permission_classes([AllowAny])
 def delete_module(request, module_id):
     try:
-        module_obj = Module.objects.get(id=module_id)
+        module_obj = Module.active_objects.get(id=module_id)
     except Module.DoesNotExist:
         return Response({"msg":"Module Not Found"},status=404)
-    module_obj.delete()
+    module_obj.soft_delete()
     return Response({"msg":"Module Deleted Successfully"},status=204)
 
 class ModuleList(generics.ListCreateAPIView):
-    queryset = Module.objects.all()
+    queryset = Module.active_objects.all()
     serializer_class = ModuleSerializer
     permission_classes = [AllowAny]
 
@@ -392,7 +470,7 @@ def Create_video_content(request):
 @permission_classes([AllowAny])
 def get_video_content_details(request , video_id):
     try:
-        video_obj = video_contents.objects.get(id=video_id)
+        video_obj = video_contents.active_objects.get(id=video_id)
     except video_contents.DoesNotExist:
         return Response({"msg":"Video Content Not Found"},status=404)
     serializer = video_contentsSerializer(video_obj, context={'request': request})
@@ -402,7 +480,7 @@ def get_video_content_details(request , video_id):
 @permission_classes([AllowAny])
 def update_video_content(request, video_id):
     try:
-        video_obj = video_contents.objects.get(id=video_id)
+        video_obj = video_contents.active_objects.get(id=video_id)
     except video_contents.DoesNotExist:
         return Response({"msg":"Video Content Not Found"},status=404)
     serializer = video_contentsSerializer(video_obj, data=request.data)
@@ -415,22 +493,20 @@ def update_video_content(request, video_id):
 @permission_classes([AllowAny])
 def delete_video_content(request, video_id):
     try:
-        video_obj = video_contents.objects.get(id=video_id)
+        video_obj = video_contents.active_objects.get(id=video_id)
     except video_contents.DoesNotExist:
         return Response({"msg":"Video Content Not Found"},status=404)
-    video_obj.delete()
+    video_obj.soft_delete()
     return Response({"msg":"Video Content Deleted Successfully"},status=204)
 
-
 class video_content_list(generics.ListCreateAPIView):
-    queryset = video_contents.objects.all()
+    queryset = video_contents.active_objects.all()
     serializer_class = video_contentsSerializer
     permission_classes = [AllowAny]
-    
-    
-##########################################################################################################################################
-########## DOCS CONTENT API VIEWS  #######################################################################################################
-##########################################################################################################################################
+
+#####################################################################################################################################
+########## DOCS CONTENT API VIEWS  #####################################################################################################################################
+#####################################################################################################################################
     
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -445,7 +521,7 @@ def Create_docs_content(request):
 @permission_classes([AllowAny])
 def get_details_docs_content(request,docs_id):
     try:
-        docs_obj = docs_contents.objects.get(id=docs_id)
+        docs_obj = docs_contents.active_objects.get(id=docs_id)
     except docs_contents.DoesNotExist:
         return Response({"msg":"Docs Content Not Found"},status=404)
     serializer = docs_contentsSerializer(docs_obj, context={'request': request})
@@ -456,7 +532,7 @@ def get_details_docs_content(request,docs_id):
 @permission_classes([AllowAny])
 def update_docs_content(request, docs_id):
     try:
-        docs_obj = docs_contents.objects.get(id=docs_id)
+        docs_obj = docs_contents.active_objects.get(id=docs_id)
     except docs_contents.DoesNotExist:
         return Response({"msg":"Docs Content Not Found"},status=404)
     serializer = docs_contentsSerializer(docs_obj, data=request.data)
@@ -469,15 +545,15 @@ def update_docs_content(request, docs_id):
 @permission_classes([AllowAny])
 def delete_docs_content(request, docs_id):
     try:
-        docs_obj = docs_contents.objects.get(id=docs_id)
+        docs_obj = docs_contents.active_objects.get(id=docs_id)
     except docs_contents.DoesNotExist:
         return Response({"msg":"Docs Content Not Found"},status=404)
-    docs_obj.delete()
+    docs_obj.soft_delete()
     return Response({"msg":"Docs Content Deleted Successfully"},status=204)
 
 
 class docs_content_list(generics.ListCreateAPIView):
-    queryset = docs_contents.objects.all()
+    queryset = docs_contents.active_objects.all()
     serializer_class = docs_contentsSerializer
     permission_classes = [AllowAny]
     
@@ -489,7 +565,7 @@ class docs_content_list(generics.ListCreateAPIView):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_overall_course_details(request):
-    courses = Course.objects.all()
+    courses = Course.active_objects.all()
     overall_data = []
 
     for course_obj in courses:
@@ -561,7 +637,7 @@ def create_video_activity(request):
 @permission_classes([AllowAny])
 def get_video_activity_details(request, activity_id):
     try:
-        activity_obj = Video_Activity.objects.get(id = activity_id)
+        activity_obj = Video_Activity.active_objects.get(id = activity_id)
     except Video_Activity.DoesNotExist:
         return Response({"msg":"Activity Not Found"},status=404)
     
@@ -572,7 +648,7 @@ def get_video_activity_details(request, activity_id):
 @permission_classes([AllowAny])
 def update_video_activity(request, activity_id):
     try:
-        activity_obj = Video_Activity.objects.get(id=activity_id)
+        activity_obj = Video_Activity.active_objects.get(id=activity_id)
     except Video_Activity.DoesNotExist:
         return Response({"msg":"Activity Not Found"},status=404)
     serializer = video_activitySerializer(activity_obj, data=request.data)
@@ -585,14 +661,14 @@ def update_video_activity(request, activity_id):
 @permission_classes([AllowAny])
 def delete_video_activity(request, activity_id):
     try:
-        activity_obj = Video_Activity.objects.get(id = activity_id)
+        activity_obj = Video_Activity.active_objects.get(id = activity_id)
     except Video_Activity.DoesNotExist:
         return Response({"msg":"Activity Not Found"},status=404)
-    activity_obj.delete()
+    activity_obj.soft_delete()
     return Response({"msg":"Activity Deleted Successfully"},status=204)
 
 class VideoActivityList(generics.ListCreateAPIView):
-    queryset = Video_Activity.objects.all()
+    queryset = Video_Activity.active_objects.all()
     serializer_class = video_activitySerializer
     permission_classes = [AllowAny]
     

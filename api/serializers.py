@@ -10,7 +10,7 @@ class SailorUserSerializer(serializers.ModelSerializer):
         slug_field = 'email',
         queryset = User.objects.all()
     )
-    class Meta:
+    class Meta:                                                                                             
         model = SailorUser
         fields = ['id', 'email', 'name', 'age', 'rank', 'mobile_number', 'address']
         
@@ -37,7 +37,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
         sailor = SailorUser.objects.get(email=self.user)
-        data.pop('refresh', None)
         # if not sailor.is_verified:
         #     raise serializers.ValidationError("Email not verified")
         #     data['user'] = {
