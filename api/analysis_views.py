@@ -79,6 +79,9 @@ class Soar_Quiz_AnswerViewSet(viewsets.ModelViewSet):
     serializer_class = Soar_Quiz_AnswerSerializer
     permission_classes = [AllowAny]
     
+    
+
+    
 
 ##########################################################
 ########## SOAR QUIZ AVERAGE SCORE API VIEWS ################### ###########################################################
