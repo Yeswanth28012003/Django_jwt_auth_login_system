@@ -7,6 +7,64 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from . import analysis_views
+
+
+soar_cattegory_list = analysis_views.Soar_CategoryViewSet.as_view({
+    'get':'list',
+    'post':'create',
+})
+
+soar_cattegory_detail = analysis_views.Soar_CategoryViewSet.as_view({
+    'get':'retrieve',
+    'put':'update',
+    'delete':'destroy',
+})
+
+soar_quiz_data_list = analysis_views.Soar_Quiz_DataViewSet.as_view({
+    'get':'list',
+    'post':'create',
+})
+
+soar_quiz_data_detail = analysis_views.Soar_Quiz_DataViewSet.as_view({
+    'get':'retrieve',
+    'put':'update',
+    'delete':'destroy',
+})
+
+soar_quiz_answer_list =  analysis_views.Soar_Quiz_AnswerViewSet.as_view({
+    'get':'list',
+    'post':'create',
+})
+
+soar_quiz_answer_detail = analysis_views.Soar_Quiz_AnswerViewSet.as_view({
+    'get':'retrieve',
+    'put':'update',
+    'delete':'destroy',
+})
+
+
+soar_quiz_Average_score = analysis_views.Soar_Quiz_Average_ScoreViewSet.as_view({
+    'get':'list',
+    'post':'create',
+})
+
+soar_quiz_Average_score_detail = analysis_views.Soar_Quiz_Average_ScoreViewSet.as_view({
+    'get':'retrieve',
+    'put':'update',
+    'delete':'destroy',
+})
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -21,8 +79,16 @@ urlpatterns = [
     path('auth/google-login/',views.GoogleLoginView.as_view(), name='google-login'),
     path('auth/register/',views.signup_user,name = 'signup user'),
     # path('loginuser/',views.login_user,name = 'login user'),
-    path('auth/verify/',views.verify_email,name = "verify email"),
+    path('auth/verify-account/<str:token>',views.verify_account,name = "verify email"),
     path('auth/resend_otp/',views.resend_otp,name="resend otp"),
+    
+    
+    #############################################################################
+    ######################## API URLS for FORGOT PASSWORD #######################
+    #############################################################################
+    path('auth/forgot',views.forgot_password,name='forgot password'),
+    path('auth/set-password/<str:email>',views.reset_password,name='reset password'),
+    
     
     
     #############################################################################
@@ -127,6 +193,68 @@ urlpatterns = [
     path('update_activity/<int:activity_id>/',views.update_video_activity,name='update video activity'),
     path('delete_activity/<int:activity_id>/',views.delete_video_activity,name='delete video activity'),
     path('activity_list/',views.VideoActivityList.as_view(),name='video activity list'),
+
+    ##############################################
+    ########## API FOR SOAR CARD #################
+    ###############################################
+    
+    path('soar_categories/',soar_cattegory_list,name='soar category list create'),
+    
+    path('soar_categories/<int:pk>/',soar_cattegory_detail,name='soar category detail update delete'),
+    
+    path('soar_quiz_data/',soar_quiz_data_list,name='soar quiz data list create'),
+    
+    path('soar_quiz_data/<int:pk>/',soar_quiz_data_detail,name='soar quiz data detail update delete'),
+    
+    path('soar_quiz_answer/',soar_quiz_answer_list,name='soar quiz answer list create'),
+    
+    path('create_soar_quiz_answer/',analysis_views.create_quiz_answer_data_calculation,name='create soar quiz answer with calculation'),
+    path('soar_quiz_answer/<int:pk>/',soar_quiz_answer_detail,name='soar quiz answer detail update delete'),
+    
+    path('soar_quiz_average_score/',soar_quiz_Average_score,name='soar quiz average score list create'),
+    
+    path('soar_quiz_average_score/<int:pk>/',soar_quiz_Average_score_detail,name='soar quiz average score detail update delete'),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

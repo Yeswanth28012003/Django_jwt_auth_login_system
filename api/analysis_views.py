@@ -71,6 +71,28 @@ class Soar_Quiz_DataViewSet(viewsets.ModelViewSet):
     serializer_class = Soar_Quiz_DataSerializer
     permission_classes = [AllowAny]
     
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_quiz_answer_data_calculation(request):
+    serializer = Soar_Quiz_AnswerSerializer(data=request.data)
+    if serializer.is_valid():
+        quiz_answer = serializer.save()
+        print("Quiz answer saved:", quiz_answer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+
+
+
+
+    
 ##########################################################
 ########## SOAR QUIZ ANSWER API VIEWS ################### ###########################################################
 
@@ -79,7 +101,11 @@ class Soar_Quiz_AnswerViewSet(viewsets.ModelViewSet):
     serializer_class = Soar_Quiz_AnswerSerializer
     permission_classes = [AllowAny]
     
-    
+
+
+
+
+
 
     
 

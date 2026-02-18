@@ -112,7 +112,7 @@ class Soar_Quiz_DataSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Soar_Quiz_Data
-        fields = ['id','category', 'question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option']
+        fields = ['id','category', 'question', 'option_a', 'option_b', 'option_c', 'option_d']
         
 class Soar_Quiz_AnswerSerializer(serializers.ModelSerializer):
      quiz_data = serializers.SlugRelatedField(
@@ -120,10 +120,15 @@ class Soar_Quiz_AnswerSerializer(serializers.ModelSerializer):
             queryset=Soar_Quiz_Data.objects.all()
         )
      SailorUser = serializers.SlugRelatedField(
-            slug_field='email',queryset = SailorUser.objects.all())
+            slug_field='email',queryset = SailorUser.objects.all(),source='email.email')
+     
+     category = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Soar_Category.objects.all()
+    )
      class Meta:
             model = Soar_Quiz_Answer
-            fields = ['id','quiz_data', 'selected_option','SailorUser', 'score']
+            fields = ['id','quiz_data','category','selected_option','SailorUser', 'points']
         
 class Soar_Quiz_Average_ScoreSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(

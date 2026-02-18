@@ -42,6 +42,9 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
+import uuid
+from django.urls import reverse
+from django.shortcuts import redirect
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
@@ -83,48 +86,216 @@ class sailoruserlistview(generics.ListCreateAPIView):
     serializer_class = SailorUserSerializer
     permission_classes = [IsAuthenticated]
     
-# Sign up User View
-# @csrf_exempt
+    
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
+    print(email, password)
 
     if User.objects.filter(email=email).exists():
-        return Response(
-            {'error': 'Email already exists'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Email already exists'}, status=400)
+
     try:
         user = User.objects.create_user(
             username=email,
             email=email,
             password=password
         )
-        user.save()
-        sailor_user = SailorUser.active_objects.create(email=user)
-        sailor_user.otp = generate_otp()
-        sailor_user.otp_created_at = timezone.now()
-        sailor_user.save()
+
+        sailor_user = SailorUser.objects.create(
+            email=user,
+            verification_token=uuid.uuid4()
+        )
+
+    
+        verify_url = f"http://127.0.0.1:8000/api/auth/verify-account/{sailor_user.verification_token}"
+
+    
+        html_message = f"""
+        <html>
+            <body>
+                <h2>Welcome to Strive High LMS</h2>
+                <p>Click below button to verify your account:</p>
+
+                <a href="{verify_url}" 
+                   style="
+                        background-color:#4CAF50;
+                        color:white;
+                        padding:14px 20px;
+                        text-decoration:none;
+                        border-radius:5px;
+                        display:inline-block;
+                   ">
+                   Verify Account
+                </a>
+
+                <p>If button doesn't work, click below link:</p>
+                <p>{verify_url}</p>
+            </body>
+        </html>
+        """
+
         send_mail(
-            subject="Verify Your Otp",
-            message=f"Your otp is {sailor_user.otp}", 
-            from_email= settings.EMAIL_HOST_USER,
-            recipient_list=[sailor_user.email.email],
-            fail_silently=False
+            subject="Verify your account",
+            message="",
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[email],
+            html_message=html_message
         )
-        return Response(
-            {'message': 'User created successfully. Please verify your email.'},
-            status=status.HTTP_201_CREATED
-        )
+
+        return Response({
+            "message": "User created. Please check your email to verify account."
+        }, status=201)
 
     except Exception as e:
         print(e)
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        return Response({'error': str(e)}, status=500)  
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def verify_account(request, token):
+    try:
+        sailor_user = SailorUser.objects.get(verification_token=token)
+
+        if sailor_user.is_verified:
+            return redirect("http://localhost:5173/login")
+
+        sailor_user.is_verified = True
+        sailor_user.verification_token = None
+        sailor_user.save()
+
+        # redirect to frontend login page
+        return redirect("http://localhost:5173/login")
+
+    except SailorUser.DoesNotExist:
+        return redirect("http://localhost:5173/login")
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password(request):
+
+    email = request.data.get('email')
+
+    try:
+        user = User.objects.get(email=email)
+        sailor_user = SailorUser.objects.get(email=user)
+
+        sailor_user.reset_password_token = uuid.uuid4()
+        sailor_user.save()
+
+        reset_url = f"http://localhost:5173/login/set-password/{sailor_user.email.email}/"
+
+        html_message = f"""
+        <html>
+        <body>
+        <h2>Reset Your Password</h2>
+
+        <a href="{reset_url}"
+        style="
+        background-color:#2196F3;
+        color:white;
+        padding:14px 20px;
+        text-decoration:none;
+        border-radius:5px;">
+        Reset Password
+        </a>
+        <p>If the button doesn't work, click the link below:</p>
+        <p>{reset_url}</p>
+        
+
+        </body>
+        </html>
+        """
+
+        send_mail(
+            subject="Reset your password",
+            message="",
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[email],
+            html_message=html_message
         )
+
+        return Response({"message": "Password reset link sent to email"})
+
+    except User.DoesNotExist:
+        return Response({"error": "Email not found"}, status=404)
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request, email):
+
+    new_password = request.data.get('password')
+
+    try:
+        sailor_user = SailorUser.objects.get(email__email=email)
+        
+
+        user = sailor_user.email
+        user.set_password(new_password)
+        user.save()
+
+        sailor_user.reset_password_token = None
+        sailor_user.save()
+
+        return Response({"message": "Password reset successful"})
+
+    except SailorUser.DoesNotExist:
+        return Response({"error": "Invalid token"}, status=400)
+
+
+
+
+
+# Sign up User View
+# @csrf_exempt
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# def signup_user(request):
+#     email = request.data.get('email')
+#     password = request.data.get('password')
+
+#     if User.objects.filter(email=email).exists():
+#         return Response(
+#             {'error': 'Email already exists'},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
+#     try:
+#         user = User.objects.create_user(
+#             username=email,
+#             email=email,
+#             password=password
+#         )
+#         user.save()
+#         sailor_user = SailorUser.active_objects.create(email=user)
+#         sailor_user.otp = generate_otp()
+#         sailor_user.otp_created_at = timezone.now()
+#         sailor_user.save()
+#         send_mail(
+#             subject="Verify Your Otp",
+#             message=f"Your otp is {sailor_user.otp}", 
+#             from_email= settings.EMAIL_HOST_USER,
+#             recipient_list=[sailor_user.email.email],
+#             fail_silently=False
+#         )
+#         return Response(
+#             {'message': 'User created successfully. Please verify your email.'},
+#             status=status.HTTP_201_CREATED
+#         )
+
+#     except Exception as e:
+#         print(e)
+#         return Response(
+#             {'error': str(e)},
+#             status=status.HTTP_500_INTERNAL_SERVER_ERROR
+#         )
+
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -195,27 +366,27 @@ def login_user(request):
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def verify_email(request):
-    email = request.data.get("email")
-    otp = request.data.get("otp")
-    print(email)
-    try:
-        user = User.objects.get(email=email)
-        sailor_user = SailorUser.active_objects.get(email=user)
-    except User.DoesNotExist  :
-        return Response({"msg":"user not found"},status=404)
-    except SailorUser.DoesNotExist:
-        return Response({"msg":"User Not Found "},status=404)
-    if sailor_user.otp != otp:
-        return Response({"msg":"Invalid OTP"},status=400)
-    if timezone.now() > sailor_user.otp_created_at + timedelta(minutes=5):
-        return Response({"msg":"OTP expired"},status=400)
-    sailor_user.is_verified = True
-    sailor_user.otp = None
-    sailor_user.save()
-    return Response({"message":"Email verfied Successfully"},status=200)
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# def verify_email(request):
+#     email = request.data.get("email")
+#     otp = request.data.get("otp")
+#     print(email)
+#     try:
+#         user = User.objects.get(email=email)
+#         sailor_user = SailorUser.active_objects.get(email=user)
+#     except User.DoesNotExist  :
+#         return Response({"msg":"user not found"},status=404)
+#     except SailorUser.DoesNotExist:
+#         return Response({"msg":"User Not Found "},status=404)
+#     if sailor_user.otp != otp:
+#         return Response({"msg":"Invalid OTP"},status=400)
+#     if timezone.now() > sailor_user.otp_created_at + timedelta(minutes=5):
+#         return Response({"msg":"OTP expired"},status=400)
+#     sailor_user.is_verified = True
+#     sailor_user.otp = None
+#     sailor_user.save()
+#     return Response({"message":"Email verfied Successfully"},status=200)
 
 ######################################################
 ###################### Restore Course Api View #######
