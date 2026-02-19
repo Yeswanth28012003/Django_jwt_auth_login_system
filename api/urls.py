@@ -94,10 +94,10 @@ urlpatterns = [
     #############################################################################
     ######################## API URLS for SailorUser ############################
     #############################################################################
-    path('userlist/',views.sailoruserlistview.as_view(),name='userlist'),
+    path('userlist',views.sailoruserlistview.as_view(),name='userlist'),
     
+    path('userinfo',views.create_sailoruser,name='userinfo'),
     
-
     
     
     
@@ -208,7 +208,7 @@ urlpatterns = [
     
     path('soar_quiz_answer/',soar_quiz_answer_list,name='soar quiz answer list create'),
     
-    path('create_soar_quiz_answer/',analysis_views.create_quiz_answer_data_calculation,name='create soar quiz answer with calculation'),
+    path('create_soar_quiz_answer/',analysis_views.create_quiz_answer_data,name='create soar quiz answer with calculation'),
     path('soar_quiz_answer/<int:pk>/',soar_quiz_answer_detail,name='soar quiz answer detail update delete'),
     
     path('soar_quiz_average_score/',soar_quiz_Average_score,name='soar quiz average score list create'),

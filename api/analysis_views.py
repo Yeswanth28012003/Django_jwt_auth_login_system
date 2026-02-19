@@ -71,22 +71,60 @@ class Soar_Quiz_DataViewSet(viewsets.ModelViewSet):
     serializer_class = Soar_Quiz_DataSerializer
     permission_classes = [AllowAny]
     
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def create_quiz_answer_data_calculation(request):
-    serializer = Soar_Quiz_AnswerSerializer(data=request.data)
-    if serializer.is_valid():
-        quiz_answer = serializer.save()
-        print("Quiz answer saved:", quiz_answer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
+def create_quiz_answer_data(request):
+    answers = request.data   
+    if not isinstance(answers, list):
+        return Response({"error": "Expected list of answers"}, status=400)
+    created_answers = []
+    try:
+        for answer in answers:
+            email = answer.get("email")
+            category = answer.get("category")
+            quiz_data = answer.get("quiz_data")
+            selected_option = answer.get("selected_option")
+            points = answer.get("points")
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response({"error": f"User not found: {email}"}, status=404)
+            try:
+                sailor_user = SailorUser.objects.get(email=user)
+            except SailorUser.DoesNotExist:
+                return Response({"error": "SailorUser not found"}, status=404)
+            try:
+                category_instance = Soar_Category.objects.get(name=category)
+            except Soar_Category.DoesNotExist:
+                return Response({"error": f"Category not found: {category}"}, status=404)
+            try:
+                quiz_data_instance = Soar_Quiz_Data.objects.get(question=quiz_data)
+            except Soar_Quiz_Data.DoesNotExist:
+                return Response({"error": f"Question not found: {quiz_data}"}, status=404)
+            previous_attempt = Soar_Quiz_Answer.active_objects.filter(
+                SailorUser=sailor_user,
+                quiz_data=quiz_data_instance
+            ).order_by('-attempt').first()
+            new_attempt = previous_attempt.attempt + 1 if previous_attempt else 1
+            Soar_Quiz_Answer.active_objects.create(
+                SailorUser=sailor_user,
+                category=category_instance,
+                quiz_data=quiz_data_instance,
+                selected_option=selected_option,
+                points=points,
+                attempt=new_attempt
+            )
+            created_answers.append({
+                "question": quiz_data,
+                "attempt": new_attempt
+            })
+        return Response({
+            "msg": "All answers submitted successfully",
+            "total": len(created_answers),
+            "data": created_answers
+        }, status=201)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 
 

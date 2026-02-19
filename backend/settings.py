@@ -244,3 +244,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'thirdviziondemo@gmail.com'      
 EMAIL_HOST_PASSWORD = 'hysxujqfiypycczu'      
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+DATE_INPUT_FORMATS = ['%d-%m-%Y']
+DATE_FORMAT = 'd-m-Y'

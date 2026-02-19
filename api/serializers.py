@@ -9,10 +9,15 @@ class SailorUserSerializer(serializers.ModelSerializer):
     email = serializers.SlugRelatedField(
         slug_field = 'email',
         queryset = User.objects.all()
+        
     )
-    class Meta:                                                                                             
+    Date_of_birth = serializers.DateField(
+        input_formats=['%d-%m-%Y', '%Y-%m-%d'],
+        format='%d-%m-%Y'
+    )
+    class Meta:                                
         model = SailorUser
-        fields = ['id', 'email', 'name', 'age', 'rank', 'mobile_number', 'address']
+        fields = "__all__"
         
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
@@ -128,8 +133,8 @@ class Soar_Quiz_AnswerSerializer(serializers.ModelSerializer):
     )
      class Meta:
             model = Soar_Quiz_Answer
-            fields = ['id','quiz_data','category','selected_option','SailorUser', 'points']
-        
+            fields = '__all__'
+         
 class Soar_Quiz_Average_ScoreSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         slug_field='name',

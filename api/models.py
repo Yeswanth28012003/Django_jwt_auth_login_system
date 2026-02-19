@@ -41,10 +41,13 @@ class BaseModel(models.Model):
 class SailorUser(BaseModel):
     email = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, blank=True, null=True)
+    Gender = models.CharField(max_length=100,blank=True,null=True)
+    Date_of_birth = models.DateField(blank=True,null=True)
+    company = models.CharField(max_length=100,blank=True,null= True)
     age = models.IntegerField(blank=True, null=True)
+    work  = models.CharField(max_length=100,blank=True,null=True)
     rank = models.CharField(max_length=100, blank=True, null=True)
     mobile_number = models.PositiveBigIntegerField(blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     otp = models.CharField(max_length=10,blank=True,null=True)
     otp_created_at = models.DateTimeField(default=timezone.now)
@@ -52,7 +55,7 @@ class SailorUser(BaseModel):
     verification_token = models.UUIDField(default=uuid.uuid4, editable=False, null=True,
         blank=True)
     is_verified = models.BooleanField(default=False)
-    reset_password_token = models.UUIDField(null=True, blank=True)
+ 
 
     
     
@@ -128,6 +131,10 @@ class  Soar_Quiz_Answer(BaseModel):
     quiz_data = models.ForeignKey(Soar_Quiz_Data, on_delete=models.CASCADE, related_name='answers')
     selected_option = models.CharField(max_length=255)
     points = models.IntegerField(default=0)
+    attempt= models.IntegerField(default=0)
+
+    
+
 
     def __str__(self):
         return f"{self.SailorUser.name}" + " - " + self.category.name + " - " + self.quiz_data.question + " - " + self.selected_option
@@ -136,9 +143,11 @@ class Soar_Quiz_Average_Score(BaseModel):
     SailorUser = models.ForeignKey(SailorUser, on_delete=models.CASCADE, related_name='average_scores')
     category = models.ForeignKey(Soar_Category, on_delete=models.CASCADE, related_name='average_scores')
     average_score = models.FloatField()
+    attempt = models.IntegerField(default=0)
+    date = models.DateField(auto_now_add=timezone.now)
     
 
     def __str__(self):
-        return self.SailorUser.name + " - " + self.category.name + " - " + str(self.average_score)
+        return  self.SailorUser.email.email + str(self.average_score) + str(self.date)
 
 

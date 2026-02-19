@@ -45,6 +45,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 import uuid
 from django.urls import reverse
 from django.shortcuts import redirect
+from datetime import datetime
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
@@ -81,14 +82,83 @@ class GoogleLoginView(APIView):
 
 
 
+######################################################################
+######################## USER INFO API ###############################
+#######################################################################
 class sailoruserlistview(generics.ListCreateAPIView):
     queryset = SailorUser.active_objects.all()
     serializer_class = SailorUserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_sailoruser(request):
+    email = request.data.get('email')
+    username = request.data.get('name')
+    gender = request.data.get('gender')
+    Dateofbirth = request.data.get('dob')
+    age = request.data.get('age')
+    company = request.data.get('company')
+    work = request.data.get('work')
+    rank = request.data.get('rank')
+    phone = request.data.get('number')
+    
+    if not email or not username or not gender or not Dateofbirth or not age or not company or not work or not rank or not phone :
+        return Response ({"error":"every field must be filled"},status=400)
+    
+    print(email,username,gender,Dateofbirth,age,
+          company,work,rank,phone)
+    
+    try:
+        Dob = datetime.strptime(Dateofbirth,"%d-%m-%Y" 
+                                ).date()
+    except:
+        return Response(
+           { "error":" Date must be in dd-mm-yyyy format"
+        },status=400)
     
     
+    try:
+        user_instance = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response({"error":"User not found User"},status=404)
+    except Exception as e:
+        return Response({"error":f"Internal Server Error {e} "},status=404)
+    
+    try:
+        sailor_instance = SailorUser.objects.get(email=user_instance)
+    except SailorUser.DoesNotExist:
+        return Response({"error":"User not found sailor"},status=404)
+    except Exception as e:
+        return Response({"error":f"internal server error {e} "})
+    
+    print(sailor_instance)
+    
+    try:
+        sailor_instance.name = username
+        sailor_instance.Gender = gender
+        sailor_instance.Date_of_birth=Dob
+        sailor_instance.company = company
+        sailor_instance.age = age
+        sailor_instance.work = work
+        sailor_instance.rank = rank
+        sailor_instance.mobile_number = phone
+        sailor_instance.save()
 
+    except Exception as e:
+        return Response({"error":f"{e}"},status=500)
+    
 
+    return Response({"msg":"created success fully"},status =201)
+    
+    
+    
+    
+    
+    
+    
+    
+    
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup_user(request):
@@ -822,7 +892,7 @@ def update_video_activity(request, activity_id):
         activity_obj = Video_Activity.active_objects.get(id=activity_id)
     except Video_Activity.DoesNotExist:
         return Response({"msg":"Activity Not Found"},status=404)
-    serializer = video_activitySerializer(activity_obj, data=request.data)
+    serializer = video_activitySerializer(activity_obj,data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
