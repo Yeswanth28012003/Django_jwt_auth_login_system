@@ -71,8 +71,8 @@ class Category(BaseModel):
         return self.name
 class Course(BaseModel):
     name =  models.CharField(max_length=100)
+    banner_image = models.ImageField(upload_to='banner_images/')
     category  = models.ManyToManyField(Category) 
-    description = models.TextField(blank=True, null=True)
     def __str__(self):
         return self.name
     

@@ -145,14 +145,21 @@ def create_sailoruser(request):
         return Response({"error":f"{e}"},status=500)
     
     return Response({"msg":"created success fully"},status =201)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_sailouruser(request , email):
+    try:
+        user_obj = User.objects.get(email = email)
+    except Exception as e:
+        return Response({"error":f"{e}" },status=500)
     
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -612,7 +619,7 @@ def get_course_details(request, course_id):
         course = Course.active_objects.get(id = course_id)
     except Course.DoesNotExist: 
         return Response({"msg":"Course NOt found"},status=404)
-    serializer  = CourseSerializer(course)
+    serializer  = CourseSerializer(course,context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
