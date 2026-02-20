@@ -102,12 +102,11 @@ def create_sailoruser(request):
     work = request.data.get('work')
     rank = request.data.get('rank')
     phone = request.data.get('phone_number')
+    hobbies = request.data.get('hobbies')
+    
     
     if not email or not username or not gender or not Dateofbirth or not age or not company or not work or not rank or not phone :
         return Response ({"error":"every field must be filled"},status=400)
-    
-    print(email,username,gender,Dateofbirth,age,
-          company,work,rank,phone)
     
     try:
         Dob = datetime.strptime(Dateofbirth,"%d-%m-%Y" 
@@ -116,7 +115,6 @@ def create_sailoruser(request):
         return Response(
            { "error":" Date must be in dd-mm-yyyy format"
         },status=400)
-    
     
     try:
         user_instance = User.objects.get(email=email)
@@ -132,8 +130,6 @@ def create_sailoruser(request):
     except Exception as e:
         return Response({"error":f"internal server error {e} "})
     
-    print(sailor_instance)
-    
     try:
         sailor_instance.name = username
         sailor_instance.Gender = gender
@@ -143,12 +139,11 @@ def create_sailoruser(request):
         sailor_instance.work = work
         sailor_instance.rank = rank
         sailor_instance.mobile_number = phone
+        sailor_instance.hobbies = hobbies
         sailor_instance.save()
-
     except Exception as e:
         return Response({"error":f"{e}"},status=500)
     
-
     return Response({"msg":"created success fully"},status =201)
     
     

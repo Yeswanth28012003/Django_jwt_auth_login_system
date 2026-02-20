@@ -48,6 +48,7 @@ class SailorUser(BaseModel):
     work  = models.CharField(max_length=100,blank=True,null=True)
     rank = models.CharField(max_length=100, blank=True, null=True)
     mobile_number = models.PositiveBigIntegerField(blank=True, null=True)
+    hobbies = models.CharField(max_length=200,blank=True,null=True)
     is_verified = models.BooleanField(default=False)
     otp = models.CharField(max_length=10,blank=True,null=True)
     otp_created_at = models.DateTimeField(default=timezone.now)
