@@ -98,10 +98,10 @@ def create_sailoruser(request):
     gender = request.data.get('gender')
     Dateofbirth = request.data.get('dob')
     age = request.data.get('age')
-    company = request.data.get('company')
+    company = request.data.get('company_name')
     work = request.data.get('work')
     rank = request.data.get('rank')
-    phone = request.data.get('number')
+    phone = request.data.get('phone_number')
     
     if not email or not username or not gender or not Dateofbirth or not age or not company or not work or not rank or not phone :
         return Response ({"error":"every field must be filled"},status=400)
